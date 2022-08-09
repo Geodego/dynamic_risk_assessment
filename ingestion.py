@@ -23,21 +23,22 @@ def merge_multiple_dataframe():
     # compile the datasets together
     data_list = []
     for file in filenames:
-        data_list.append(pd.read_csv(input_folder_path + '/' + file))
+        data_list.append(pd.read_csv(os.path.join(input_folder_path, file)))
     data = pd.concat(data_list)
 
     # remove duplicates
     data = data.drop_duplicates(ignore_index=True)
 
     # Write to an output file
+    data_path = os.path.join(output_folder_path, 'finaldata.csv')
     try:
-        data.to_csv(output_folder_path + '/' + 'finaldata.csv', index=False)
+        data.to_csv(data_path, index=False)
     except FileNotFoundError:
         os.mkdir(output_folder_path)
-        data.to_csv(output_folder_path + '/' + 'finaldata.csv', index=False)
+        data.to_csv(data_path, index=False)
 
     # saving a record of the ingestion
-    with open(output_folder_path + '/' + 'ingestedfiles.txt', 'w') as f:
+    with open(os.path.join(output_folder_path, 'ingestedfiles.txt'), 'w') as f:
         for file in filenames:
             f.write(file + '\n')
 
