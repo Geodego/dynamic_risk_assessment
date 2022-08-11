@@ -1,11 +1,7 @@
-from flask import Flask, session, jsonify, request
 import pandas as pd
-import numpy as np
 import pickle
 import os
 from sklearn import metrics
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
 import json
 
 # Load config.json and get path variables
@@ -19,6 +15,8 @@ test_data_path = os.path.join(config['test_data_path'], 'testdata.csv')
 def score_model():
     """
     Function for model scoring
+    :return:
+    f1 score (float)
     """
     # load test_data and model
     test_data = pd.read_csv(test_data_path)
@@ -35,6 +33,7 @@ def score_model():
     output_path = os.path.join(config['output_model_path'], 'latestscore.txt')
     with open(output_path, 'w') as f:
         f.write(str(f1_score) + '\n')
+    return f1_score
 
 
 if __name__ == '__main__':
