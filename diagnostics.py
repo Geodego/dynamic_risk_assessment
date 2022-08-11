@@ -13,18 +13,17 @@ with open('config.json', 'r') as f:
 dataset_csv_path = os.path.join(config['output_folder_path'], 'finaldata.csv')
 
 
-def model_predictions(data_path):
+def model_predictions(data):
     """
     Get model predictions: read the deployed model and a test dataset, calculate predictions
-    :param data_path: path of the data we use for prediction
+    :param data: data we use for prediction
     :return:
     list containing all predictions
     """
     production_path = os.path.join(config['prod_deployment_path'])
     model_path = os.path.join(production_path, 'trainedmodel.pkl')
     model = pickle.load(open(model_path, 'rb'))
-    test_data = pd.read_csv(data_path)
-    X = test_data.iloc[:, 1:-1]
+    X = data.iloc[:, 1:-1]
     predictions = list(model.predict(X))
     return predictions
 
@@ -105,7 +104,8 @@ def outdated_packages_list():
 
 if __name__ == '__main__':
     test_data_path = os.path.join(config['test_data_path'], 'testdata.csv')
-    y_pred = model_predictions(test_data_path)
+    data = pd.read_csv(test_data_path)
+    y_pred = model_predictions(data)
     stats = dataframe_summary()
     missing = missing_data()
     time_check = execution_time()
