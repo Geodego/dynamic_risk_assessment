@@ -16,7 +16,7 @@ dataset_csv_path = os.path.join(config['output_folder_path'], 'finaldata.csv')
 def model_predictions(data):
     """
     Get model predictions: read the deployed model and a test dataset, calculate predictions
-    :param data: data we use for prediction
+    :param data: data we use for prediction represented as a panda Dataframe
     :return:
     list containing all predictions
     """
