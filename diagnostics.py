@@ -11,19 +11,19 @@ with open('config.json', 'r') as f:
     config = json.load(f)
 
 dataset_csv_path = os.path.join(config['output_folder_path'], 'finaldata.csv')
-test_data_path = os.path.join(config['test_data_path'], 'testdata.csv')
-production_path = os.path.join(config['prod_deployment_path'])
 
 
-def model_predictions():
+def model_predictions(data_path):
     """
     Get model predictions: read the deployed model and a test dataset, calculate predictions
+    :param data_path: path of the data we use for prediction
     :return:
     list containing all predictions
     """
+    production_path = os.path.join(config['prod_deployment_path'])
     model_path = os.path.join(production_path, 'trainedmodel.pkl')
     model = pickle.load(open(model_path, 'rb'))
-    test_data = pd.read_csv(test_data_path)
+    test_data = pd.read_csv(data_path)
     X = test_data.iloc[:, 1:-1]
     predictions = list(model.predict(X))
     return predictions
@@ -90,12 +90,12 @@ def outdated_packages_list():
     requirements = [r.split('==') for r in requirements if r]
     df = pd.DataFrame(requirements, columns=['module', 'current'])
 
-    # Get outadated dependencies using PIP
-    outdated = subprocess.check_output(['pip', 'list', '--outdated']).decode('utf8')
-    outdated = outdated.split('\n')[2:]  # the first 2 items are not packages
-    outdated = [x.split(' ') for x in outdated if x]
-    outdated = [[y for y in x if y] for x in outdated]  # list of [package, current version, latest version]
-    outdated_dic = {x[0]: x[2] for x in outdated}  # {package: latest version}
+    # Get outdated dependencies using PIP
+    outdated_dep = subprocess.check_output(['pip', 'list', '--outdated']).decode('utf8')
+    outdated_dep = outdated_dep.split('\n')[2:]  # the first 2 items are not packages
+    outdated_dep = [x.split(' ') for x in outdated_dep if x]
+    outdated_dep = [[y for y in x if y] for x in outdated_dep]  # list of [package, current version, latest version]
+    outdated_dic = {x[0]: x[2] for x in outdated_dep}  # {package: latest version}
     df['latest'] = df['module'].map(outdated_dic)
 
     # if we're already using the latest version of a module, we fill latest with this version:
@@ -104,7 +104,8 @@ def outdated_packages_list():
 
 
 if __name__ == '__main__':
-    y_pred = model_predictions()
+    test_data_path = os.path.join(config['test_data_path'], 'testdata.csv')
+    y_pred = model_predictions(test_data_path)
     stats = dataframe_summary()
     missing = missing_data()
     time_check = execution_time()
