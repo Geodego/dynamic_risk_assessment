@@ -1,50 +1,90 @@
-from flask import Flask, session, jsonify, request
+"""
+API set-up for model reporting: scripts that create reports related to the ML model, its performance, and related
+diagnostics.
+
+author: Geoffroy de Gournay
+date: August 2022
+"""
+
+from flask import Flask, request, jsonify
 import pandas as pd
-import numpy as np
-import pickle
-import create_prediction_model
-import diagnosis 
-import predict_exited_from_saved_model
+from diagnostics import model_predictions, dataframe_summary, missing_data, execution_time, outdated_packages_list
+from scoring import score_model
 import json
 import os
+import logging
 
+logging.basicConfig(level=logging.INFO, format="%(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger()
 
-
-######################Set up variables for use in our script
 app = Flask(__name__)
 app.secret_key = '1652d576-484a-49fd-913a-6879acfa6ba4'
 
-with open('config.json','r') as f:
-    config = json.load(f) 
+with open('config.json', 'r') as f:
+    config = json.load(f)
 
-dataset_csv_path = os.path.join(config['output_folder_path']) 
-
-prediction_model = None
+dataset_csv_path = os.path.join(config['output_folder_path'])
 
 
-#######################Prediction Endpoint
-@app.route("/prediction", methods=['POST','OPTIONS'])
-def predict():        
-    #call the prediction function you created in Step 3
-    return #add return value for prediction outputs
 
-#######################Scoring Endpoint
-@app.route("/scoring", methods=['GET','OPTIONS'])
-def stats():        
-    #check the score of the deployed model
-    return #add return value (a single F1 score number)
+@app.route("/prediction", methods=['POST', 'OPTIONS'])
+def predict():
+    """
+    Load the data saved in 'datapath' and calculate related model predictions
+    :return:
+    string with list of predictions related to data saved in 'datapath'.
+    """
+    logger.info('running predict')
+    data_path = request.get_json()['datapath']
 
-#######################Summary Statistics Endpoint
-@app.route("/summarystats", methods=['GET','OPTIONS'])
-def stats():        
-    #check means, medians, and modes for each column
-    return #return a list of all calculated summary statistics
+    df = pd.read_csv(data_path)
+    y_pred = model_predictions(df)
+    return str(y_pred)
 
-#######################Diagnostics Endpoint
-@app.route("/diagnostics", methods=['GET','OPTIONS'])
-def stats():        
-    #check timing and percent NA values
-    return #add return value for all diagnostics
 
-if __name__ == "__main__":    
+@app.route("/scoring", methods=['GET', 'OPTIONS'])
+def stats1():
+    """
+    Check the f1 score of the deployed model on test data.
+    :return:
+    f1 score (str)
+    """
+    logger.info('running stats1')
+    score = score_model()
+    return str(score)
+
+
+@app.route("/summarystats", methods=['GET', 'OPTIONS'])
+def stats2():
+    """
+    check means, medians, and modes for each column
+    :return:
+    json dictionary of all calculated summary statistics
+    """
+    logger.info('running stats2')
+    col_stats = dataframe_summary()
+    return jsonify(col_stats)
+
+
+@app.route("/diagnostics", methods=['GET', 'OPTIONS'])
+def stats3():
+    """
+    check timing and percent NA values, and dependencies
+    :return:
+    json of:
+    dictionary: {
+    'missing': missing values statistics,
+    'time_check': timing of training and ingestion,
+    'outdated': list of packages with version used and latest available version
+    }
+    """
+    logger.info('running stats3')
+    missing = missing_data()
+    time_check = execution_time()
+    outdated = outdated_packages_list()
+    diags = {'missing': missing, 'time_check': time_check, 'outdated': outdated}
+    return jsonify(diags)
+
+
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000, debug=True, threaded=True)
