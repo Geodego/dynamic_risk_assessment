@@ -49,7 +49,7 @@ def dataframe_summary():
 
     col_stats = {}
     for col in X.columns:
-        col_stats[col] = {'mean': means[col], 'median': medians[col], 'std_var': std_var[col]}
+        col_stats[col] = {'mean': means[col], 'median': medians[col], 'std_dev': std_var[col]}
 
     return col_stats
 
@@ -58,14 +58,14 @@ def missing_data():
     """
     Check for missing data by calculating what percent of each column consists of NA values.
     :return:
-    list with the same number of elements as the number of columns in the dataset.
-    Each element of the list will be the percent of NA values in a particular column of the data.
+    Dictionary with keys corresponding to the columns of the dataset.
+    Each element of the dictionary gives the percent of NA values in a particular column of the data.
     """
     data = pd.read_csv(dataset_csv_path)
     missing = data.isna().sum()
     n_data = data.shape[0]
     missing = missing / n_data
-    return list(missing)
+    return missing.to_dict()
 
 
 def execution_time():
@@ -93,9 +93,10 @@ def outdated_packages_list():
     (the current version is recorded in requirements.txt).
 
     :return:
-    Output a pandas Dataframe with three columns: the first column will show the name of a Python
-    module that is used; the second column will show the currently installed version of that Python module, and
-    the third column will show the most recent available version of that Python module.
+    Output a list of dictionaries, one for each package used: the first key will show the name of a Python
+    module that is used; the second key will show the currently installed version of that Python module, and
+    the third key will show the most recent available version of that Python module:
+    [{'module': 'click', 'current': '7.1.2', 'latest': '8.1.3'}, ...]
     """
     # current version of dependencies
     with open('requirements.txt', 'r') as req_file:
@@ -113,7 +114,7 @@ def outdated_packages_list():
 
     # if we're already using the latest version of a module, we fill latest with this version:
     df['latest'].fillna(df['current'], inplace=True)
-    return df
+    return df.to_dict('records')
 
 
 if __name__ == '__main__':
