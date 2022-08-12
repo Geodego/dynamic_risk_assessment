@@ -1,3 +1,10 @@
+"""
+Model and Data Diagnostics: diagnostic tests related to the model as well as the data.
+
+author: Geoffroy de Gournay
+date: August 2022
+"""
+
 import subprocess
 
 import pandas as pd
@@ -32,12 +39,19 @@ def dataframe_summary():
     """
     Get summary statistics
     :return:
-    list containing pandas Series with columns statistics: mean, median, std deviation
+    dictionary of statistics (mean, median, std deviation) related to each numericol column
     """
     data = pd.read_csv(dataset_csv_path)
     X = data.iloc[:, 1:-1]
+    means = X.mean()
+    medians = X.median()
+    std_var = X.std()
 
-    return [X.mean(), X.median(), X.std()]
+    col_stats = {}
+    for col in X.columns:
+        col_stats[col] = {'mean': means[col], 'median': medians[col], 'std_var': std_var[col]}
+
+    return col_stats
 
 
 def missing_data():
