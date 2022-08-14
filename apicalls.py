@@ -11,8 +11,7 @@ import os
 import json
 import logging
 
-logging.basicConfig(level=logging.INFO, format="%(name)s - %(levelname)s - %(message)s")
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 # Specify a URL that resolves to the workspace
 URL = "http://127.0.0.1:8000/"
@@ -72,5 +71,3 @@ report_path = os.path.join(config['output_model_path'], 'apireturns.txt')
 
 with open(report_path, 'w') as f:
     f.write(responses)
-
-
