@@ -36,6 +36,21 @@ scoring scripts. Check for dependency changes and package updates.
 can return model predictions and metrics.
 - **Process Automation**. Create a script and cron job that automatically run all previous steps at regular intervals.
 
+## How to use this project in deployment
+
+- We need to define the folder that will be used for storing new data and saving the model. For that purpose, we need 
+to define in the **config.json** file:
+  - `input_folder_path` entry for storing new data
+  - `output_model_path` entry for storing production models
+  - Executing **wsgi.py** will start the API:
+  ```bash
+  python3 wsgi.py
+  ```
+- We then run **fullprocess.py**:
+  ```bash
+  python3 fullprocess.py
+  ```
+
 ## Data Ingestion
 Data ingestion is important because all ML models require datasets for training. Instead of using a single, static 
 dataset, you're going to create a script that's flexible enough to work with constantly changing sets of input files. 
@@ -120,12 +135,13 @@ scoring.py. To accomplish model scoring, you need to do the following:
 specified in the output_model_path entry of your config.json file
 
 ### Model Deployment
-Finally, you need to write a function that will deploy your model. You can write this function in the starter file called deployment.py.
+Finally, you need to write a function that will deploy your model. You can write this function in the starter file 
+called **deployment.py**.
 
 Your model deployment function will not create new files; it will only copy existing files. It will copy your trained 
 model (`trainedmodel.pkl`), your model score (`latestscore.txt`), and a record of your ingested data 
-(`ingestedfiles.txt`). It will copy all three of these files from their original locations to a production deployment directory. 
-The location of the production deployment directory is specified in the `prod_deployment_path` entry of your 
+(`ingestedfiles.txt`). It will copy all three of these files from their original locations to a production deployment 
+directory. The location of the production deployment directory is specified in the `prod_deployment_path` entry of your 
 config.json starter file.
 
 ## Model and Data Diagnostics
@@ -243,5 +259,66 @@ We also need to change the `output_model_path`. In the training version of **con
 is set to `/practicemodels/`. We should change it to `/models/` for storing production models instead of practice 
 models.
 
+### Checking and Reading New Data
+We need to check whether any new data exists that needs to be ingested.
 
+We accomplish the check for new data in two steps:
+- we read the file **ingestedfiles.txt** from the deployment directory, specified in the `prod_deployment_path` entry 
+of the **config.json** file.
+- we check the directory specified in the `input_folder_path` entry of **config.json**, and determine whether there are 
+- any files there that are not in the list from **ingestedfiles.txt**.
 
+If there are any files in the `input_folder_path` directory that are not listed in **ingestedfiles.txt**, then we need 
+to run the code in **ingestion.py** to ingest all the new data.
+
+### Deciding Whether to Proceed (first time)
+If we found in the previous step that there is no new data, then there will be no way to train a new model, and so 
+there will be no need to continue with the rest of the deployment process. The script will only continue to the next 
+step (checking for model drift) if we found and ingested new data in the previous step.
+
+### Checking for Model Drift
+
+We check for model drift by accomplishing the following steps:
+- Read the score from the latest model, recorded in **latestscore.txt** from the deployment directory, specified in 
+the `prod_deployment_path` entry of the **config.json** file.
+- Make predictions using the **trainedmodel.pkl** model in the `/production_deployment` directory and the most recent 
+data we obtained from the previous "Checking and Reading New Data" step.
+- Get a score for the new predictions from step 2 by running the **scoring.py**.
+- Check whether the new score from step 3 is higher or lower than the score recorded in **latestscore.txt** in step 1 
+using the raw comparison test. If the score from step 3 is lower, then model drift has occurred. Otherwise, it has not.
+
+### Deciding Whether to Proceed (second time)
+If we found in the previous step that there is no model drift, then the current model is working well and there's no 
+need to replace it, so there will be no need to continue with the rest of the deployment process. Our script will only 
+continue to the next step (re-training and re-deployment) if we found evidence for model drift in the previous step.
+
+### Re-training
+We Train a new model using the most recent data we obtained from the previous step. We run **training.py** to complete 
+this step. When we run **training.py**, a model trained on the most recent data will be saved in the `output_model_path` 
+entry of the **config.json** file.
+
+### Re-deployment
+To perform re-deployment, we need to run the script called **deployment.py**. The model we need to deploy is the model 
+we saved when we ran training.py in the "Re-training" section above.
+
+### Diagnostics and Reporting
+The last part of the script runs the code from **apicalls.py** and **reporting.py** on the most recently deployed model 
+(the model deployed in the previous "re-deployment" section). When we run reporting.py, we'll create a new version of 
+**confusionmatrix.png**, which will be saved in the `/models/` directory. When we run **apicalls.py**, we'll create a 
+new version of **apireturns.txt**, which will be saved in the `/models/` directory.
+
+### Cron job for the full pipeline
+The script, **fullprocess.py**, accomplishes all of the important steps in the model deployment, scoring, and 
+monitoring process. But it's not enough just to have the script sitting in our workspace - we need to make sure the 
+script runs regularly without manual intervention.
+
+To accomplish this, we'll write a crontab file that runs the fullprocess.py script one time every 10 min.
+
+To successfully install a crontab file that runs the **fullprocess.py** script, we need to make sure to do the 
+following:
+- In the command line of your workspace, run the following command: `service cron start`
+- Open your workspace's crontab file by running `crontab -e` in our workspace's command line. If you're using vim to 
+edit the crontab, you need to press the "i" key to be able to insert a cron job.
+After you write the cron job in the crontab file, you can save your work and exit vim by pressing the escape key, and 
+then typing ":wq" , and then press Enter. This will save your one-line cron job to the crontab file and return you to 
+the command line. If you want to view your crontab file after exiting vim, you can run crontab -l on the command line.
