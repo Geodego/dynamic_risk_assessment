@@ -12,6 +12,9 @@ import timeit
 import os
 import json
 import pickle
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Load config.json and get environment variables
 with open('config.json', 'r') as f:
@@ -27,6 +30,7 @@ def model_predictions(data):
     :return:
     list containing all predictions
     """
+    logger.info('calculate model predictions')
     production_path = os.path.join(config['prod_deployment_path'])
     model_path = os.path.join(production_path, 'trainedmodel.pkl')
     model = pickle.load(open(model_path, 'rb'))
@@ -39,8 +43,9 @@ def dataframe_summary():
     """
     Get summary statistics
     :return:
-    dictionary of statistics (mean, median, std deviation) related to each numericol column
+    dictionary of statistics (mean, median, std deviation) related to each numerical column
     """
+    logger.info('calculate statistics on the data')
     data = pd.read_csv(dataset_csv_path)
     X = data.iloc[:, 1:-1]
     means = X.mean()
@@ -61,6 +66,7 @@ def missing_data():
     Dictionary with keys corresponding to the columns of the dataset.
     Each element of the dictionary gives the percent of NA values in a particular column of the data.
     """
+    logger.info('check for missing data')
     data = pd.read_csv(dataset_csv_path)
     missing = data.isna().sum()
     n_data = data.shape[0]
@@ -74,6 +80,7 @@ def execution_time():
     :return:
     list of 2 timing values in seconds
     """
+    logger.info('calculate timing for ingestion and training')
     # timing ingestion
     starttime = timeit.default_timer()
     os.system('python3 ingestion.py')
@@ -98,6 +105,7 @@ def outdated_packages_list():
     the third key will show the most recent available version of that Python module:
     [{'module': 'click', 'current': '7.1.2', 'latest': '8.1.3'}, ...]
     """
+    logger.info('Check dependencies versions')
     # current version of dependencies
     with open('requirements.txt', 'r') as req_file:
         requirements = req_file.read().split('\n')
