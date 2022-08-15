@@ -14,8 +14,7 @@ import json
 import os
 import logging
 
-logging.basicConfig(level=logging.INFO, format="%(name)s - %(levelname)s - %(message)s")
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = '1652d576-484a-49fd-913a-6879acfa6ba4'
@@ -24,7 +23,8 @@ with open('config.json', 'r') as f:
     config = json.load(f)
 
 dataset_csv_path = os.path.join(config['output_folder_path'])
-
+test_data_path = os.path.join(config['test_data_path'], 'testdata.csv')
+prod_deployment_path = os.path.join(config['prod_deployment_path'])
 
 
 @app.route("/prediction", methods=['POST', 'OPTIONS'])
@@ -50,7 +50,8 @@ def stats1():
     f1 score (str)
     """
     logger.info('running stats1')
-    score = score_model()
+    model_path = os.path.join(prod_deployment_path, 'trainedmodel.pkl')
+    score = score_model(test_data_path, model_path)
     return str(score)
 
 
