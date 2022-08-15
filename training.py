@@ -1,8 +1,18 @@
+"""
+Model training..
+
+author: Geoffroy de Gournay
+date: August 2022
+"""
+
 import pandas as pd
 import pickle
 import os
 from sklearn.linear_model import LogisticRegression
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Load config.json and get path variables
 with open('config.json', 'r') as f:
@@ -16,6 +26,7 @@ def train_model():
     """
     Function for training the model
     """
+    logger.info('training the model started.')
     # use this logistic regression for training
     model = LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
                                intercept_scaling=1, l1_ratio=None, max_iter=100,
@@ -29,6 +40,7 @@ def train_model():
     model.fit(X, y)
 
     # write the trained model to your workspace in a file called trainedmodel.pkl
+    logger.info(f'saving the model to {model_path}')
     try:
         pickle.dump(model, open(model_path, 'wb'))
     except FileNotFoundError:
