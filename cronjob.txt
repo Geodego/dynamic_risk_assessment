@@ -1,0 +1,2 @@
+*/10 * * * *  /home/workspace/execute_fullprocess.sh
+# the path is the one to use for executing the cron job in the udacity VM.
