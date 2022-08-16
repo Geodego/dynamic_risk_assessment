@@ -38,18 +38,32 @@ def go(testing_mode=False):
     :return:
     """
     exec_time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    logger.info('*' * 10 + ' ' * 4 + f'{exec_time}: Running full process' + ' ' * 4 + '*' * 10)
+    msg = '*' * 10 + ' ' * 4 + f'{exec_time}: Running full process' + ' ' * 4 + '*' * 10
+    logger.info(msg)
+    with open('cron_jobs_executed.txt', 'w') as f:
+        f.write(msg + '\n')
 
     if testing_mode:
         logger.info('testing mode activated')
 
+    # checking if directory for model exists
+    if not os.path.isdir(output_model_path):
+        os.mkdir(output_model_path)
+        logger.info(f'Creation of directory {output_model_path} where the model will be saved')
+
     # Check and read new data
     # read ingestedfiles.txt
     logger.info('Checking if new data are available')
-    with open(os.path.join(prod_deployment_path, 'ingestedfiles.txt')) as f:
-        ingested_files = f.read().split('\n')
-    ingested_files = [f for f in ingested_files if f]  # remove any empty string
-
+    try:
+        with open(os.path.join(prod_deployment_path, 'ingestedfiles.txt')) as f:
+            ingested_files = f.read().split('\n')
+        ingested_files = [f for f in ingested_files if f]  # remove any empty string
+        first_implementation = False
+    except FileNotFoundError:
+        logger.info('No file has been ingested yet in production')
+        logger.info('This is the first time the production model is deployed')
+        ingested_files = []
+        first_implementation = True
     # determine whether the source data folder has files that aren't listed in ingestedfiles.txt
     filenames = next(os.walk(input_folder_path), (None, None, []))[2]  # [] if no file
     new_data = [file for file in filenames if file not in ingested_files]
@@ -67,27 +81,19 @@ def go(testing_mode=False):
         logger.info('as we are in testing mode process continue. Should stop in production')
 
     # Checking for model drift
-    # check whether the score from the deployed model is different from the score from the model that uses the newest
-    # ingested data
-    logger.info('checking for model drift using newly ingested data')
-    with open(os.path.join(prod_deployment_path, 'latestscore.txt'), 'r') as f:
-        latest_score = float(f.read())
-    model_path = os.path.join(prod_deployment_path, 'trainedmodel.pkl')
-    data_path = os.path.join(output_folder_path, 'finaldata.csv')
-
-    # check if production model already exists, if not all the steps need to be completed as it is the first time the
-    # model is deployed. If production model exists there must be a directory corresponding to output_model_path
-    if not os.path.isdir(output_model_path):
-        first_implementation = True
-        os.mkdir(output_model_path)
-        logger.info('This is the first time the production model is deployed')
-        logger.info(f'Creation of directory {output_model_path} where the model will be saved')
+    if first_implementation:
+        model_drift = False
     else:
-        logger.info('The model has already been deployed in production in the past.')
-        first_implementation = False
+        # check whether the score from the deployed model is different from the score from the model that uses the
+        # newest ingested data
+        logger.info('checking for model drift using newly ingested data')
+        with open(os.path.join(prod_deployment_path, 'latestscore.txt'), 'r') as f:
+            latest_score = float(f.read())
+        model_path = os.path.join(prod_deployment_path, 'trainedmodel.pkl')
+        data_path = os.path.join(output_folder_path, 'finaldata.csv')
 
-    new_score = score_model(data_path, model_path)
-    model_drift = True if new_score < latest_score and not first_implementation else False
+        new_score = score_model(data_path, model_path)
+        model_drift = True if new_score < latest_score else False
 
     # Deciding whether to proceed, part 2
     # if we found model drift, we proceed. otherwise, we do end the process here
