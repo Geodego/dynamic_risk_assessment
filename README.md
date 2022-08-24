@@ -1,3 +1,7 @@
+[![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
+[![Scikit-learn 0.24.1](https://img.shields.io/badge/scikit_learn-0.24.1-blue.svg)](https://scikit-learn.org/0.24/whats_new/v0.24.html#version-0-24-1)
+[![Flask 1.1.2](https://img.shields.io/badge/flask-1.1.2-blue.svg)](https://pypi.org/project/Flask/)
+
 # Dynamic Risk Assessment System
 
 Udacity Machine Learning DevOps Engineer project.
@@ -86,7 +90,7 @@ dataset. We create a record of all of the files we read in this step, and save t
 
 We store this record in a file called **ingestedfiles.txt**. This file contains a list of the filenames of 
 every .csv that were read in the **ingestion.py** script. We save this file to the directory that's specified in 
-the `output_folder_path entry` of the `config.json` configuration file.
+the `output_folder_path entry` of the **config.json** configuration file.
 
 ## Training, Scoring, and Deploying an ML Model
 Training and Scoring an ML model is important because ML models are only worth deploying if they've been trained, 
